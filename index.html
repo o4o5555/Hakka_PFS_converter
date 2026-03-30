@@ -178,9 +178,6 @@
         else if (/[aeioumnbdg]+(11|24|31|55|2|5)\b/i.test(firstWord)) {
             detectedType = "numeric";
         } 
-        else if (/[bdjqrxz]/i.test(firstWord) || /(^|[^n])g/i.test(firstWord) || /\bc(?!h)/i.test(firstWord) || /\bi[a-z]/i.test(firstWord)) {
-            detectedType = "tone";
-        } 
         else if (
             /[ÁÀÂÍÌÎÚÙÛÉÈÊÓÒÔáàâíìîúùûéèêóòôṲṳńǹŃǸḿḾ]/.test(firstWord) || 
             /[aeiouṳ][\u0300\u0301\u0302\u030D]/i.test(firstWord) || 
@@ -189,6 +186,9 @@
         ) {
             detectedType = "pfs";
         }
+        else if (/[bdjqrxz]/i.test(firstWord) || /(^|[^n])g/i.test(firstWord) || /\bc(?!h)/i.test(firstWord) || /\bi[a-z]/i.test(firstWord)) {
+            detectedType = "tone";
+        } 
 
         // Update select menu and show badge
         const selectMenu = document.getElementById("inputType");
