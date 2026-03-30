@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>四縣腔客語羅馬字轉換器</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --input-bg: #2d2d2d;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --border-color: #3f3f46;
+            --primary: #3b82f6; 
+            --primary-hover: #2563eb;
+            --accent-pfs: #0ea5e9; 
+            --accent-num: #f59e0b; 
+            --accent-tone: #10b981; 
+            --copy-btn: #3f3f46;
+            --copy-btn-hover: #52525b;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        h1 { color: #ffffff; font-size: 28px; margin-bottom: 30px; font-weight: 600; text-align: center; }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color);
+        }
+
+        .input-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .label { font-weight: 500; color: var(--text-muted); font-size: 14px; }
+
+        .auto-detect-badge {
+            font-size: 12px; color: #fbbf24; background-color: rgba(251, 191, 36, 0.1);
+            padding: 4px 10px; border-radius: 12px; border: 1px solid rgba(251, 191, 36, 0.3);
+            opacity: 0; transition: all 0.3s ease; transform: translateX(10px);
+        }
+        .auto-detect-badge.show { opacity: 1; transform: translateX(0); }
+
+        select, textarea {
+            width: 100%; padding: 14px; font-size: 16px; border: 1px solid var(--border-color);
+            border-radius: 8px; margin-bottom: 20px; background-color: var(--input-bg);
+            color: #ffffff; box-sizing: border-box; transition: all 0.2s ease;
+            font-family: 'Fira Code', Consolas, monospace; 
+        }
+
+        textarea { height: 140px; resize: vertical; border-color: var(--primary); }
+
+        .btn-convert { 
+            background-color: var(--primary); color: white; width: 100%; padding: 16px 20px;
+            border: none; border-radius: 8px; cursor: pointer; font-size: 18px;
+            font-weight: 600; letter-spacing: 1px; margin-bottom: 30px;
+            transition: all 0.2s;
+        }
+        .btn-convert:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+
+        .output-container { margin-bottom: 24px; background-color: var(--input-bg); border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden; }
+        .output-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background-color: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); }
+        .btn-copy-small { background-color: var(--copy-btn); color: var(--text-main); border: none; border-radius: 4px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
+        .output-box { padding: 16px; font-size: 18px; min-height: 60px; max-height: 150px; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word; font-family: 'Fira Code', Consolas, monospace; color: #f3f4f6; box-sizing: border-box; }
+        .out-pfs { border-left: 4px solid var(--accent-pfs); }
+        .out-num { border-left: 4px solid var(--accent-num); }
+        .out-tone { border-left: 4px solid var(--accent-tone); }
+
+        .info-section { margin-top: 40px; padding: 25px; background-color: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid var(--border-color); }
+        .info-section h2 { font-size: 18px; color: var(--primary); margin-top: 0; margin-bottom: 15px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 14px; }
+        th, td { padding: 12px; border-bottom: 1px solid var(--border-color); text-align: left; }
+        th { color: var(--text-muted); background-color: rgba(0,0,0,0.1); }
+        .tag { padding: 2px 6px; border-radius: 4px; font-size: 12px; background: var(--input-bg); border: 1px solid var(--border-color); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>四縣腔客語羅馬字轉換器</h1>
+    
+    <div class="input-header">
+        <span class="label">1. 貼上客語文本：</span>
+        <span class="auto-detect-badge" id="detectBadge">✨ 系統已自動辨識類型</span>
+    </div>
+    <textarea id="inputText" placeholder="貼上數字式/白話字/調號式的四縣腔客語羅馬字 (Hag2 ga24, Hak-kâ, Hagˋ gaˊ...)" oninput="autoDetectType()"></textarea>
+
+    <span class="label">2. 確認輸入類型：</span>
+    <select id="inputType">
+        <option value="numeric">教育部數字式 (Hag2 ga24 fa55)</option>
+        <option value="pfs">客語白話字 PFS (Hak-kâ-fa)</option>
+        <option value="tone">教育部調號式 (Hagˋ gaˊ fa)</option>
+    </select>
+    
+    <button class="btn-convert" onclick="runConversion()">轉換</button>
+
+    <div class="output-container">
+        <div class="output-header">
+            <span class="label">客語白話字 (Pha̍k-fa-sṳ)</span>
+            <button class="btn-copy-small" id="copyBtn1" onclick="copyResult('outPfsText', 'copyBtn1')">複製結果</button>
+        </div>
+        <div class="output-box out-pfs" id="outPfsText">等待輸入...</div>
+    </div>
+
+    <div class="output-container">
+        <div class="output-header">
+            <span class="label">教育部數字式客語拼音</span>
+            <button class="btn-copy-small" id="copyBtn2" onclick="copyResult('outNumText', 'copyBtn2')">複製結果</button>
+        </div>
+        <div class="output-box out-num" id="outNumText">等待輸入...</div>
+    </div>
+
+    <div class="output-container">
+        <div class="output-header">
+            <span class="label">教育部調號式客語拼音</span>
+            <button class="btn-copy-small" id="copyBtn3" onclick="copyResult('outToneText', 'copyBtn3')">複製結果</button>
+        </div>
+        <div class="output-box out-tone" id="outToneText">等待輸入...</div>
+    </div>
+
+    <div class="info-section">
+        <h2>系統說明：四縣腔聲調對照表</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>調名</th>
+                    <th>白話字 (PFS)</th>
+                    <th>數字式客拼</th>
+                    <th>調號式客拼</th>
+                    <th>客拼說明</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>陰平</td><td>â (揚抑符)</td><td>24</td><td>aˊ</td><td>-</td></tr>
+                <tr><td>陽平</td><td>à (重音符)</td><td>11</td><td>aˇ</td><td>-</td></tr>
+                <tr><td>上聲</td><td>á (尖音符)</td><td>31</td><td>aˋ</td><td>舒聲結尾</td></tr>
+                <tr><td>去聲</td><td>a (無標號)</td><td>55</td><td>a</td><td>舒聲結尾</td></tr>
+                <tr><td>陰入</td><td>ap (無標號)</td><td>2</td><td>abˋ</td><td>結尾 b, d, g</td></tr>
+                <tr><td>陽入</td><td>a̍p (垂直線)</td><td>5</td><td>ab</td><td>結尾 b, d, g</td></tr>
+            </tbody>
+        </table>
+        <p style="font-size: 13px; color: var(--text-muted);">
+            <strong>自動辨識：</strong> 貼上文本後，系統會偵測拼寫差異自動切換輸入羅馬字類型。
+        </p>
+    </div>
+</div>
+
+<script>
+    /**
+     * Auto detect input type
+     */
+    function autoDetectType() {
+        const text = document.getElementById("inputText").value.trim();
+        if (!text) {
+            document.getElementById("detectBadge").classList.remove("show");
+            return;
+        }
+
+        // Use the first word to determine the type
+        const firstWord = text.split(/\s+/)[0];
+        let detectedType = "tone"; 
+
+        // Detection logic
+        if (/[ˊˇˋ]/.test(firstWord)) {
+            detectedType = "tone";
+        } 
+        else if (/[aeioumnbdg]+(11|24|31|55|2|5)\b/i.test(firstWord)) {
+            detectedType = "numeric";
+        } 
+        else if (/[bdjqrxz]/i.test(firstWord) || /(^|[^n])g/i.test(firstWord) || /\bc(?!h)/i.test(firstWord) || /\bi[a-z]/i.test(firstWord)) {
+            detectedType = "tone";
+        } 
+        else if (
+            /[ÁÀÂÍÌÎÚÙÛÉÈÊÓÒÔáàâíìîúùûéèêóòôṲṳ]/.test(firstWord) || 
+            /[aeiouṳ][\u0300\u0301\u0302\u030D]/i.test(firstWord) || 
+            /-/.test(firstWord) || /\by/i.test(firstWord) || 
+            /[ptk]\b/i.test(firstWord) || /\b(ph|th|kh|ch)/i.test(firstWord)
+        ) {
+            detectedType = "pfs";
+        }
+
+        // Update select menu and show badge
+        const selectMenu = document.getElementById("inputType");
+        if (detectedType && selectMenu.value !== detectedType) {
+            selectMenu.value = detectedType;
+            showBadge();
+        }
+    }
+
+    let badgeTimeout;
+    function showBadge() {
+        const badge = document.getElementById("detectBadge");
+        clearTimeout(badgeTimeout);
+        badge.classList.add("show");
+        badgeTimeout = setTimeout(() => { badge.classList.remove("show"); }, 3000);
+    }
+
+    /**
+     * Main conversion flow
+     */
+    function runConversion() {
+        const input = document.getElementById("inputText").value.trim();
+        if (!input) return;
+
+        const inputType = document.getElementById("inputType").value;
+        
+        // 1. Convert input to numeric pinyin as intermediate format
+        let numericPinyin = "";
+        if (inputType === "numeric") {
+            numericPinyin = input;
+        } else if (inputType === "pfs") {
+            numericPinyin = convertBackToPinyin(input);
+        } else {
+            numericPinyin = convertToneMarkedToNumeric(input);
+        }
+        
+        // 2. Generate output formats
+        const pfsResult = convertToPFS(numericPinyin);
+        const normalizedNum = convertBackToPinyin(pfsResult); // Normalize the numeric format
+        const toneMarkedResult = convertToToneMarkedPinyin(normalizedNum);
+
+        // 3. Render results
+        document.getElementById("outPfsText").innerText = pfsResult;
+        document.getElementById("outNumText").innerText = normalizedNum;
+        document.getElementById("outToneText").innerText = toneMarkedResult;
+    }
+
+    /**
+     * Convert numeric pinyin to PFS
+     */
+    function convertToPFS(text) {
+        text = text.replace(/[ \t]+/g, '-');
+        return text.replace(/([A-Za-zṳṲ]+)(11|24|31|55|2|5)?/g, function(match, base, tone) {
+            const isCap = /^[A-Z]/.test(base);
+            const isAll = /^[A-Z]+$/.test(base) && base.length > 1;
+            base = base.toLowerCase();
+
+            // Convert initials and finals
+            const imap = { 'b':'p', 'p':'ph', 'd':'t', 't':'th', 'g':'k', 'k':'kh', 'z':'ch', 'c':'chh', 'j':'ch', 'q':'chh', 'x':'s' };
+            base = base.replace(/^[bpdtgkzcjqx]/, m => imap[m])
+                       .replace(/ii/g, 'ṳ')
+                       .replace(/b$/, 'p')
+                       .replace(/d$/, 't')
+                       .replace(/(^|[^n])g$/, '$1k');
+
+            // Handle zero initial y
+            if (base === 'i') base = 'yi'; 
+            else if (/^i[aeou]/.test(base)) base = base.replace(/^i/, 'y'); 
+            else if (/^i(m|n|ng|p|t|k)$/.test(base)) base = base.replace(/^i/, 'yi');
+
+            // Restore original case
+            if (isAll) base = base.toUpperCase(); 
+            else if (isCap) base = base.charAt(0).toUpperCase() + base.slice(1);
+
+            // Add tone diacritics
+            const dia = tone==="24"?"\u0302":tone==="11"?"\u0300":tone==="31"?"\u0301":tone==="5"?"\u030D":"";
+            if (dia) {
+                const pri = ['o','e','a','u','ṳ','i','n','m'];
+                let sb = base.toLowerCase();
+                for (let v of pri) {
+                    let idx = sb.indexOf(v);
+                    if (idx !== -1) {
+                        base = base.substring(0, idx+1) + dia + base.substring(idx+1);
+                        break;
+                    }
+                }
+            }
+            return base;
+        });
+    }
+
+    /**
+     * Convert PFS to numeric pinyin
+     */
+    function convertBackToPinyin(pfsText) {
+        return pfsText.replace(/-/g, ' ').replace(/([A-Za-zṳṲ\u0302\u0300\u0301\u030D]+)/g, function(word) {
+            // Detect tone marks
+            const tone = word.includes("\u0302") ? "24" :
+                         word.includes("\u0300") ? "11" :
+                         word.includes("\u0301") ? "31" :
+                         word.includes("\u030D") ? "5" :
+                         (/[kpt]$/i.test(word) ? "2" : "55");
+
+            let base = word.replace(/[\u0302\u0300\u0301\u030D]/g, "").toLowerCase();
+            const isCap = /^[A-Z]/.test(word);
+            const isAll = /^[A-Z]+$/.test(word) && word.length > 1;
+
+            // Restore zero initial y to i
+            if (base === 'yi') base = 'i'; 
+            else if (base.startsWith('yi')) base = base.replace('yi', 'i'); 
+            else if (base.startsWith('y')) base = base.replace('y', 'i');
+
+            // Restore initials (handle i cases)
+            if (base.startsWith('chh')) base = (base[3]==='i'?'q':'c')+base.substring(3);
+            else if (base.startsWith('ch')) base = (base[2]==='i'?'j':'z')+base.substring(2);
+            else if (base.startsWith('s') && base[1]==='i') base = 'x'+base.substring(1);
+
+            const rmap = { 'ph':'p', 'p':'b', 'th':'t', 't':'d', 'kh':'k', 'k':'g' };
+            for (let k in rmap) {
+                if (base.startsWith(k)) {
+                    base = rmap[k] + base.substring(k.length);
+                    break;
+                }
+            }
+
+            // Restore finals and endings
+            base = base.replace(/ṳ/g, 'ii').replace(/p$/, 'b').replace(/t$/, 'd').replace(/([^n])k$/, '$1g');
+            base = isAll ? base.toUpperCase() : (isCap ? base.charAt(0).toUpperCase()+base.slice(1) : base);
+            
+            return base + tone;
+        });
+    }
+
+    /**
+     * Convert numeric pinyin to tone-marked pinyin
+     */
+    function convertToToneMarkedPinyin(num) {
+        return num.replace(/(24|11|31|55|2|5)\b/g, m => (m==="24"?"ˊ":m==="11"?"ˇ":m==="31"||m==="2"?"ˋ":""));
+    }
+
+    /**
+     * Convert tone-marked pinyin to numeric pinyin
+     */
+    function convertToneMarkedToNumeric(text) {
+        return text.replace(/([A-Za-zṳṲ]+)([ˊˇˋ]?)/g, function(m, b, s) {
+            const isRuSheng = /[bdg]$/i.test(b) && !b.toLowerCase().endsWith('ng');
+            const tone = s==="ˊ"?"24":s==="ˇ"?"11":s==="ˋ"?(isRuSheng?"2":"31"):(isRuSheng?"5":"55");
+            return b + tone;
+        });
+    }
+
+    /**
+     * Copy result to clipboard
+     */
+    function copyResult(elementId, btnId) {
+        const text = document.getElementById(elementId).innerText;
+        if (!text || text.includes("等待")) return;
+        
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.getElementById(btnId);
+            const originalText = btn.innerText;
+            btn.innerText = "已複製！";
+            btn.style.backgroundColor = "var(--accent-tone)";
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.backgroundColor = "";
+            }, 2000);
+        });
+    }
+</script>
+
+</body>
+</html>
