@@ -142,9 +142,9 @@
                 </tr>
             </thead>
             <tbody>
-                <tr><td>陰平</td><td>â (揚抑符)</td><td>24</td><td>aˊ</td><td>-</td></tr>
-                <tr><td>陽平</td><td>à (重音符)</td><td>11</td><td>aˇ</td><td>-</td></tr>
-                <tr><td>上聲</td><td>á (尖音符)</td><td>31</td><td>aˋ</td><td>舒聲結尾</td></tr>
+                <tr><td>陰平</td><td>â (揚抑符)</td><td>24</td><td>aˊ</td><td>-</td></tr>
+                <tr><td>陽平</td><td>à (重音符)</td><td>11</td><td>aˇ</td><td>-</td></tr>
+                <tr><td>上聲</td><td>á (尖音符)</td><td>31</td><td>aˋ</td><td>舒聲結尾</td></tr>
                 <tr><td>去聲</td><td>a (無標號)</td><td>55</td><td>a</td><td>舒聲結尾</td></tr>
                 <tr><td>陰入</td><td>ap (無標號)</td><td>2</td><td>abˋ</td><td>結尾 b, d, g</td></tr>
                 <tr><td>陽入</td><td>a̍p (垂直線)</td><td>5</td><td>ab</td><td>結尾 b, d, g</td></tr>
@@ -182,7 +182,7 @@
             detectedType = "tone";
         } 
         else if (
-            /[ÁÀÂÍÌÎÚÙÛÉÈÊÓÒÔáàâíìîúùûéèêóòôṲṳ]/.test(firstWord) || 
+            /[ÁÀÂÍÌÎÚÙÛÉÈÊÓÒÔáàâíìîúùûéèêóòôṲṳńǹŃǸḿḾ]/.test(firstWord) || 
             /[aeiouṳ][\u0300\u0301\u0302\u030D]/i.test(firstWord) || 
             /-/.test(firstWord) || /\by/i.test(firstWord) || 
             /[ptk]\b/i.test(firstWord) || /\b(ph|th|kh|ch)/i.test(firstWord)
@@ -276,7 +276,8 @@
                     }
                 }
             }
-            return base;
+            // Fix 1: normalize to NFC before returning so base letter and tone mark form a single combined character
+            return base.normalize('NFC');
         });
     }
 
@@ -284,7 +285,28 @@
      * Convert PFS to numeric pinyin
      */
     function convertBackToPinyin(pfsText) {
-        return pfsText.replace(/-/g, ' ').replace(/([A-Za-zṳṲ\u0302\u0300\u0301\u030D]+)/g, function(word) {
+        // Fix 2: use decomposeMap prep to support composed vowel and consonant accent characters during reverse conversion
+        const decomposeMap = {
+            'á': 'a\u0301', 'à': 'a\u0300', 'â': 'a\u0302',
+            'é': 'e\u0301', 'è': 'e\u0300', 'ê': 'e\u0302',
+            'í': 'i\u0301', 'ì': 'i\u0300', 'î': 'i\u0302',
+            'ó': 'o\u0301', 'ò': 'o\u0300', 'ô': 'o\u0302',
+            'ú': 'u\u0301', 'ù': 'u\u0300', 'û': 'u\u0302',
+            'ń': 'n\u0301', 'ǹ': 'n\u0300', 'Ń': 'N\u0301', 'Ǹ': 'N\u0300',
+            'ḿ': 'm\u0301', 'Ḿ': 'M\u0301',
+            'Á': 'A\u0301', 'À': 'A\u0300', 'Â': 'A\u0302',
+            'É': 'E\u0301', 'È': 'E\u0300', 'Ê': 'E\u0302',
+            'Í': 'I\u0301', 'Ì': 'I\u0300', 'Î': 'I\u0302',
+            'Ó': 'O\u0301', 'Ò': 'O\u0300', 'Ô': 'O\u0302',
+            'Ú': 'U\u0301', 'Ù': 'U\u0300', 'Û': 'U\u0302'
+        };
+
+        let normalizedText = pfsText;
+        for (let char in decomposeMap) {
+            normalizedText = normalizedText.replace(new RegExp(char, 'g'), decomposeMap[char]);
+        }
+
+        return normalizedText.replace(/-/g, ' ').replace(/([A-Za-zṳṲ\u0302\u0300\u0301\u030D]+)/g, function(word) {
             // Detect tone marks
             const tone = word.includes("\u0302") ? "24" :
                          word.includes("\u0300") ? "11" :
