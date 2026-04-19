@@ -259,6 +259,9 @@
             else if (/^i[aeou]/.test(base)) base = base.replace(/^i/, 'y'); 
             else if (/^i(m|n|ng|p|t|k)$/.test(base)) base = base.replace(/^i/, 'yi');
 
+            // ue/ua -> PFS oe/oa
+            base = base.replace(/ue/g, 'oe').replace(/ua/g, 'oa');
+
             // Restore original case
             if (isAll) base = base.toUpperCase(); 
             else if (isCap) base = base.charAt(0).toUpperCase() + base.slice(1);
@@ -266,13 +269,26 @@
             // Add tone diacritics
             const dia = tone==="24"?"\u0302":tone==="11"?"\u0300":tone==="31"?"\u0301":tone==="5"?"\u030D":"";
             if (dia) {
-                const pri = ['o','e','a','u','ṳ','i','n','m'];
                 let sb = base.toLowerCase();
-                for (let v of pri) {
-                    let idx = sb.indexOf(v);
+                let targetChar = '';
+
+                // oe/oa special tone rule
+                if (/(oe|oa)[a-z]+$/.test(sb)) {
+                    targetChar = sb.includes('oe') ? 'e' : 'a';
+                } else {
+                    const pri = ['o','e','a','u','ṳ','i','n','m'];
+                    for (let v of pri) {
+                        if (sb.includes(v)) {
+                            targetChar = v;
+                            break;
+                        }
+                    }
+                }
+
+                if (targetChar) {
+                    let idx = sb.indexOf(targetChar);
                     if (idx !== -1) {
                         base = base.substring(0, idx+1) + dia + base.substring(idx+1);
-                        break;
                     }
                 }
             }
@@ -317,6 +333,9 @@
             let base = word.replace(/[\u0302\u0300\u0301\u030D]/g, "").toLowerCase();
             const isCap = /^[A-Z]/.test(word);
             const isAll = /^[A-Z]+$/.test(word) && word.length > 1;
+
+            // PFS oe/oa -> ue/ua
+            base = base.replace(/oe/g, 'ue').replace(/oa/g, 'ua');
 
             // Restore zero initial y to i
             if (base === 'yi') base = 'i'; 
